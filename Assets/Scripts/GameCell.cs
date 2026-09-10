@@ -47,6 +47,7 @@ namespace ConwayGame
         public void OnCellClicked()
         {
             cellState = ConwayCore.Instance.paintPickedState;
+            PaintCell();
         }
     }
 }

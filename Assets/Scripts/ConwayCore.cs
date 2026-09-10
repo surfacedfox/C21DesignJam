@@ -30,6 +30,8 @@ namespace ConwayGame
         [Header("Game Debug UI Button Refs")]
         [SerializeField] private TMP_Text autoRunText;
         [SerializeField] private Button stepButton;
+        [SerializeField] private Image pickerColorImage;
+
 
 
         //private vars for setup
@@ -115,6 +117,23 @@ namespace ConwayGame
                 StartCoroutine(GameStep());
             }
         }
+
+        public void FillPicked()
+        {
+            paintPickedState = State.Fill;
+            UpdatePickedColorUI();
+        }
+        public void BlankPicked()
+        {
+            paintPickedState = State.Blank;
+            UpdatePickedColorUI();
+        }
+        void UpdatePickedColorUI()
+        {
+            pickerColorImage.color = paintPickedState==State.Fill?Color.black:Color.white;
+        }
+            
+
 
         public void NextStepButtonPressed()
         {

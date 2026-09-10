@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using ConwayGame;
 using Unity.VisualScripting;
+using DG.Tweening;
 
 namespace ConwayGame
 {
@@ -30,10 +31,10 @@ namespace ConwayGame
             switch (cellState)
             {
                 case State.Fill:
-                    GetComponent<Image>().color = Color.black;
+                    GetComponent<Image>().DOColor(Color.black, 1.0f);
                     break;
                 case State.Blank:
-                    GetComponent<Image>().color = Color.white;
+                    GetComponent<Image>().DOColor(Color.white, 1.0f);
                     break;
                 default:
                     GetComponent<Image>().color = Color.white;

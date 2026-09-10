@@ -1,104 +1,125 @@
-using NUnit.Framework;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
-public class ConwayCore : MonoBehaviour
+namespace ConwayGame
 {
-    [Header ("References")]
-    [SerializeField] private GameObject gameCellPrefab;
-    [SerializeField] private GameObject gridLG;
-    [Header ("Game Setup")]
-    [SerializeField] private int numGridSize;
-    [SerializeField] private float stepTimer;
-    [Header("Game Debug")]
-    [SerializeField] private bool autoRun = true;
-    [Header("Game Debug UI Button Refs")]
-    [SerializeField] private TMP_Text autoRunText;
-    [SerializeField] private Button stepButton;
 
-
-    //private vars for setup
-    private List<GameCell> gameCellList = new List<GameCell>();
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public enum State
     {
-        gridLG.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, numGridSize*gridLG.GetComponent<GridLayoutGroup>().cellSize.x);
-        gridLG.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, numGridSize * gridLG.GetComponent<GridLayoutGroup>().cellSize.y);
-        for (int i = 0; i < (numGridSize * numGridSize); i++)
-        {
-            var newCell = GameObject.Instantiate(gameCellPrefab, gridLG.GetComponent<RectTransform>()).GetComponent<GameCell>();
-            gameCellList.Add(newCell);
-        }
-
-
-        if (autoRun)
-        {
-            //Finally, start the sim
-            StartCoroutine(GameStep());
-        }
+        Fill,
+        Blank
     }
 
-    IEnumerator GameStep()
+    public class ConwayCore : MonoBehaviour
     {
-        yield return new WaitForSeconds(stepTimer);
-        StepNext();
-        if (autoRun)
+        public static ConwayCore Instance { get; private set; }
+
+        [Header("References")]
+        [SerializeField] private GameObject gameCellPrefab;
+        [SerializeField] private GameObject gridLG;
+        [Header("Game Setup")]
+        [SerializeField] private int numGridSize;
+        [SerializeField] private float stepTimer;
+        [Header("Game Debug")]
+        [SerializeField] private bool autoRun = true;
+        [SerializeField] public State paintPickedState = State.Fill;
+        [Header("Game Debug UI Button Refs")]
+        [SerializeField] private TMP_Text autoRunText;
+        [SerializeField] private Button stepButton;
+
+
+        //private vars for setup
+        private List<GameCell> gameCellList = new List<GameCell>();
+
+        //Singleton boilerplate
+        private void Awake()
         {
-            StartCoroutine(GameStep());
+            // If there is an instance, and it's not me, delete myself.
+
+            if (Instance != null && Instance != this)
+            {
+                Destroy(this);
+            }
+            else
+            {
+                Instance = this;
+            }
         }
-        else
+
+        // Start is called once before the first execution of Update after the MonoBehaviour is created
+        void Start()
         {
-            StopCoroutine(GameStep());
-        }
-    }
+            gridLG.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, numGridSize * gridLG.GetComponent<GridLayoutGroup>().cellSize.x);
+            gridLG.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, numGridSize * gridLG.GetComponent<GridLayoutGroup>().cellSize.y);
+            for (int i = 0; i < (numGridSize * numGridSize); i++)
+            {
+                var newCell = GameObject.Instantiate(gameCellPrefab, gridLG.GetComponent<RectTransform>()).GetComponent<GameCell>();
+                gameCellList.Add(newCell);
+            }
 
-    void StepNext()
-    {
-        foreach (var cell in gameCellList)
+
+            if (autoRun)
+            {
+                //Finally, start the sim
+                StartCoroutine(GameStep());
+            }
+        }
+
+        IEnumerator GameStep()
         {
-            cell.UpdateState();
-            cell.PaintCell();
+            yield return new WaitForSeconds(stepTimer);
+            StepNext();
+            if (autoRun)
+            {
+                StartCoroutine(GameStep());
+            }
+            else
+            {
+                StopCoroutine(GameStep());
+            }
         }
-    }
 
-    private void OnApplicationQuit()
-    {
-        gameCellList.Clear();
-        StopAllCoroutines();
-    }
-
-
-
-
-
-
-
-    //Input Buttons
-    public void AutoRunButtonPressed()
-    {
-        if(autoRun)
+        void StepNext()
         {
-            autoRun = false;
-            autoRunText.text = "AutoRun: OFF";
-            stepButton.gameObject.SetActive(true);
-            StopCoroutine(GameStep());
+            foreach (var cell in gameCellList)
+            {
+                cell.UpdateState();
+                cell.PaintCell();
+            }
         }
-        else
+
+        private void OnApplicationQuit()
         {
-            autoRun = true;
-            autoRunText.text = "AutoRun: ON";
-            stepButton.gameObject.SetActive(false);
-            StartCoroutine(GameStep());
+            gameCellList.Clear();
+            StopAllCoroutines();
         }
-    }
+        //Input Buttons
+        public void AutoRunButtonPressed()
+        {
+            if (autoRun)
+            {
+                autoRun = false;
+                autoRunText.text = "AutoRun: OFF";
+                stepButton.gameObject.SetActive(true);
+                StopCoroutine(GameStep());
+            }
+            else
+            {
+                autoRun = true;
+                autoRunText.text = "AutoRun: ON";
+                stepButton.gameObject.SetActive(false);
+                StartCoroutine(GameStep());
+            }
+        }
 
-    public void NextStepButtonPressed()
-    {
-        StepNext();
-    }
+        public void NextStepButtonPressed()
+        {
+            StepNext();
+        }
 
+    }
 }

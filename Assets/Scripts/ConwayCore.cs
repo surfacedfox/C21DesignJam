@@ -60,6 +60,8 @@ namespace ConwayGame
             for (int i = 0; i < (numGridSize * numGridSize); i++)
             {
                 var newCell = GameObject.Instantiate(gameCellPrefab, gridLG.GetComponent<RectTransform>()).GetComponent<GameCell>();
+                newCell.xCoOrd = i % numGridSize;
+                newCell.yCoOrd = i / numGridSize;
                 gameCellList.Add(newCell);
             }
 
@@ -99,6 +101,12 @@ namespace ConwayGame
             gameCellList.Clear();
             StopAllCoroutines();
         }
+
+
+
+
+
+
         //Input Buttons
         public void AutoRunButtonPressed()
         {
@@ -130,7 +138,7 @@ namespace ConwayGame
         }
         void UpdatePickedColorUI()
         {
-            pickerColorImage.color = paintPickedState==State.Fill?Color.black:Color.white;
+            pickerColorImage.color = paintPickedState==State.Fill?Color.hotPink : Color.cornflowerBlue;
         }
             
 

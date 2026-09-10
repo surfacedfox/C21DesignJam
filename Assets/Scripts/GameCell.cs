@@ -8,17 +8,19 @@ namespace ConwayGame
 {
     public class GameCell : MonoBehaviour
     {
-
-
+        public int xCoOrd;
+        public int yCoOrd;
         public State cellState;
+        public State prevState;
 
-        public void UpdateState()
+        public void UpdateState(bool wasExtrinsic = false)
         {
             //RULES GO HERE, IF THIS.....THEN DO THIS
-            if (cellState == State.Fill)
-                cellState = State.Blank;
-            else if (cellState == State.Blank)
-                cellState = State.Fill;
+            prevState = cellState;
+            if(wasExtrinsic)
+            {
+                //do extrinsic magic wooowoo stuff
+            }
         }
 
         public State GetCellState()
@@ -31,10 +33,10 @@ namespace ConwayGame
             switch (cellState)
             {
                 case State.Fill:
-                    GetComponent<Image>().DOColor(Color.softRed, 1.0f);
+                    GetComponent<Image>().DOColor(Color.hotPink, 1.0f);
                     break;
                 case State.Blank:
-                    GetComponent<Image>().DOColor(Color.aliceBlue, 1.0f);
+                    GetComponent<Image>().DOColor(Color.cornflowerBlue, 1.0f);
                     break;
                 default:
                     GetComponent<Image>().color = Color.white;

@@ -16,7 +16,7 @@ public class ConwayCore : MonoBehaviour
 
 
     //private vars for setup
-    private List<GameCell> gameCellList;
+    private List<GameCell> gameCellList = new List<GameCell>();
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -25,8 +25,8 @@ public class ConwayCore : MonoBehaviour
         gridLG.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, numGridSize * gridLG.GetComponent<GridLayoutGroup>().cellSize.y);
         for (int i = 0; i < (numGridSize * numGridSize); i++)
         {
-            var cell = GameObject.Instantiate(gameCellPrefab, gridLG.GetComponent<RectTransform>()).GetComponent<GameCell>();
-            gameCellList.Add(cell);
+            var newCell = GameObject.Instantiate(gameCellPrefab, gridLG.GetComponent<RectTransform>()).GetComponent<GameCell>();
+            gameCellList.Add(newCell);
         }
 
 
@@ -44,5 +44,11 @@ public class ConwayCore : MonoBehaviour
             cell.PaintCell();
         }
         StartCoroutine (GameStep());
+    }
+
+    private void OnApplicationQuit()
+    {
+        gameCellList.Clear();
+        StopAllCoroutines();
     }
 }

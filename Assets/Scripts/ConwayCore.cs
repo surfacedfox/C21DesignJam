@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class ConwayCore : MonoBehaviour
 {
@@ -12,7 +13,11 @@ public class ConwayCore : MonoBehaviour
     [Header ("Game Setup")]
     [SerializeField] private int numGridSize;
     [SerializeField] private float stepTimer;
-
+    [Header("Game Debug")]
+    [SerializeField] private bool autoRun = true;
+    [Header("Game Debug UI Button Refs")]
+    [SerializeField] private TMP_Text autoRunText;
+    [SerializeField] private Button stepButton;
 
 
     //private vars for setup
@@ -30,20 +35,34 @@ public class ConwayCore : MonoBehaviour
         }
 
 
-
-        //Finally, start the sim
-        StartCoroutine(GameStep());
+        if (autoRun)
+        {
+            //Finally, start the sim
+            StartCoroutine(GameStep());
+        }
     }
 
     IEnumerator GameStep()
     {
         yield return new WaitForSeconds(stepTimer);
+        StepNext();
+        if (autoRun)
+        {
+            StartCoroutine(GameStep());
+        }
+        else
+        {
+            StopCoroutine(GameStep());
+        }
+    }
+
+    void StepNext()
+    {
         foreach (var cell in gameCellList)
         {
             cell.UpdateState();
             cell.PaintCell();
         }
-        StartCoroutine (GameStep());
     }
 
     private void OnApplicationQuit()
@@ -51,4 +70,35 @@ public class ConwayCore : MonoBehaviour
         gameCellList.Clear();
         StopAllCoroutines();
     }
+
+
+
+
+
+
+
+    //Input Buttons
+    public void AutoRunButtonPressed()
+    {
+        if(autoRun)
+        {
+            autoRun = false;
+            autoRunText.text = "AutoRun: OFF";
+            stepButton.gameObject.SetActive(true);
+            StopCoroutine(GameStep());
+        }
+        else
+        {
+            autoRun = true;
+            autoRunText.text = "AutoRun: ON";
+            stepButton.gameObject.SetActive(false);
+            StartCoroutine(GameStep());
+        }
+    }
+
+    public void NextStepButtonPressed()
+    {
+        StepNext();
+    }
+
 }

@@ -31,10 +31,10 @@ namespace ConwayGame
             switch (cellState)
             {
                 case State.Fill:
-                    GetComponent<Image>().DOColor(Color.black, 1.0f);
+                    GetComponent<Image>().DOColor(Color.softRed, 1.0f);
                     break;
                 case State.Blank:
-                    GetComponent<Image>().DOColor(Color.white, 1.0f);
+                    GetComponent<Image>().DOColor(Color.aliceBlue, 1.0f);
                     break;
                 default:
                     GetComponent<Image>().color = Color.white;

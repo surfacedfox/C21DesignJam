@@ -1,19 +1,43 @@
 using UnityEngine;
 using UnityEngine.UI;
+
 public class HarmonicGridVisualizer : MonoBehaviour
 {
     private const int GRID_SIZE = 50; // 50 * 50 = 2500 grid cells
+
+    public enum VisualMode
+    {
+        ModeA,  // Original color set
+        ModeB   // Alternative second color set
+    }
+
+    [System.Serializable]
+    public struct ModeSettings
+    {
+        public Color[] palette;
+        public float animationSpeed;
+        public int stepsPerFrame;
+    }
+
     [Header("Binding Targets")]
     [Tooltip("Attach RawImage if using UI; leave empty to auto‑generate a world‑space Quad")]
     public RawImage targetRawImage;
     public Renderer targetMeshRenderer;
-    [Header("Animation Parameters")]
-    [Range(0.1f, 3.0f)]
-    public float animationSpeed = 1.0f;
+
+    [Header("Animation Parameters (Global)")]
     [Tooltip("Enable smooth interpolation transition; disable for pixel‑jump style")]
     public bool smoothTransition = true;
-    [Range(10, 150)]
-    public int stepsPerFrame = 40; // Number of grid cells to evolve asynchronously per frame
+
+    [Header("Mode Selection")]
+    [Tooltip("Switch between two independent color palette sets")]
+    public VisualMode currentMode = VisualMode.ModeA;
+
+    [Header("Mode A Settings")]
+    public ModeSettings modeASettings;
+
+    [Header("Mode B Settings")]
+    public ModeSettings modeBSettings;
+
     // Internal state for a single grid cell
     private struct CellState
     {
@@ -22,27 +46,52 @@ public class HarmonicGridVisualizer : MonoBehaviour
         public float progress;      // 0 ~ 1
         public float speedFactor;   // Random fluctuation factor
     }
+
     private CellState[] cells = new CellState[GRID_SIZE * GRID_SIZE];
     private Texture2D gridTexture;
     private Color32[] pixelBuffer = new Color32[GRID_SIZE * GRID_SIZE];
     private float elapsedTime = 0f;
-
-    [Header("Color Palette (Edit / add / remove colors in Inspector)")]
-    public Color[] palette = new Color[]
-    {
-        new Color32(255, 209, 102, 255), // Warm Yellow #FFD166
-        new Color32(6, 214, 160, 255),   // Mint Green #06D6A0
-        new Color32(255, 159, 28, 255),  // Vibrant Orange #FF9F1C
-        new Color32(255, 112, 166, 255), // Pink‑Orange #FF70A6
-        new Color32(17, 138, 178, 255),  // Sky Blue #118AB2
-        new Color32(255, 133, 161, 255)  // Coral Pink #FF85A1
-    };
+    private VisualMode _lastMode;
 
     void Start()
     {
+        // Mode A default values (original)
+        if (modeASettings.palette == null || modeASettings.palette.Length == 0)
+        {
+            modeASettings.palette = new Color[]
+            {
+                new Color32(255, 209, 102, 255), // Warm Yellow #FFD166
+                new Color32(6, 214, 160, 255),   // Mint Green #06D6A0
+                new Color32(255, 159, 28, 255),  // Vibrant Orange #FF9F1C
+                new Color32(255, 112, 166, 255), // Pink‑Orange #FF70A6
+                new Color32(17, 138, 178, 255),  // Sky Blue #118AB2
+                new Color32(255, 133, 161, 255)  // Coral Pink #FF85A1
+            };
+            modeASettings.animationSpeed = 1.0f;
+            modeASettings.stepsPerFrame = 40;
+        }
+
+        // Mode B default values
+        if (modeBSettings.palette == null || modeBSettings.palette.Length == 0)
+        {
+            modeBSettings.palette = new Color[]
+            {
+                new Color32(30, 40, 70, 255),
+                new Color32(80, 30, 110, 255),
+                new Color32(20, 90, 95, 255),
+                new Color32(180, 60, 90, 255),
+                new Color32(10, 20, 35, 255),
+                new Color32(60, 70, 130, 255)
+            };
+            modeBSettings.animationSpeed = 0.6f;
+            modeBSettings.stepsPerFrame = 25;
+        }
+
+        _lastMode = currentMode;
         InitTexture();
         InitCells();
     }
+
     void InitTexture()
     {
         // Create 50*50 uncompressed texture, Point sampling for sharp pixel grid edges
@@ -76,8 +125,12 @@ public class HarmonicGridVisualizer : MonoBehaviour
             }
         }
     }
+
     void InitCells()
     {
+        ModeSettings settings = GetActiveModeSettings();
+        Color[] activePalette = settings.palette;
+
         for (int y = 0; y < GRID_SIZE; y++)
         {
             for (int x = 0; x < GRID_SIZE; x++)
@@ -85,8 +138,8 @@ public class HarmonicGridVisualizer : MonoBehaviour
                 int idx = y * GRID_SIZE + x;
                 // Spawn initial color patches using spatial pseudo‑noise
                 float noise = PseudoNoise2D(x, y, 0f);
-                int colorIndex = Mathf.FloorToInt(noise * palette.Length) % palette.Length;
-                Color initColor = palette[colorIndex];
+                int colorIndex = Mathf.FloorToInt(noise * activePalette.Length) % activePalette.Length;
+                Color initColor = activePalette[colorIndex];
                 cells[idx] = new CellState
                 {
                     currentColor = initColor,
@@ -100,12 +153,31 @@ public class HarmonicGridVisualizer : MonoBehaviour
         gridTexture.SetPixels32(pixelBuffer);
         gridTexture.Apply(false);
     }
+
+    ModeSettings GetActiveModeSettings()
+    {
+        if (currentMode == VisualMode.ModeB)
+            return modeBSettings;
+        return modeASettings;
+    }
+
     void Update()
     {
+        // Detect mode changed from inspector
+        if (_lastMode != currentMode)
+        {
+            OnModeSwitched();
+            _lastMode = currentMode;
+        }
+
+        ModeSettings settings = GetActiveModeSettings();
+        Color[] activePalette = settings.palette;
+
         float dt = Mathf.Min(Time.deltaTime, 0.05f);
-        elapsedTime += dt * animationSpeed;
+        elapsedTime += dt * settings.animationSpeed;
+
         // 1. Asynchronously select partial cells to sample flowing noise field
-        int stepCount = Mathf.FloorToInt(stepsPerFrame * animationSpeed);
+        int stepCount = Mathf.FloorToInt(settings.stepsPerFrame * settings.animationSpeed);
         for (int i = 0; i < stepCount; i++)
         {
             int rx = UnityEngine.Random.Range(0, GRID_SIZE);
@@ -115,8 +187,8 @@ public class HarmonicGridVisualizer : MonoBehaviour
             if (cells[idx].progress >= 0.85f)
             {
                 float noiseVal = PseudoNoise2D(rx, ry, elapsedTime * 0.45f);
-                int colorIdx = Mathf.FloorToInt(noiseVal * palette.Length) % palette.Length;
-                Color targetCol = palette[colorIdx];
+                int colorIdx = Mathf.FloorToInt(noiseVal * activePalette.Length) % activePalette.Length;
+                Color targetCol = activePalette[colorIdx];
                 if (cells[idx].targetColor != targetCol)
                 {
                     cells[idx].targetColor = targetCol;
@@ -125,7 +197,7 @@ public class HarmonicGridVisualizer : MonoBehaviour
             }
         }
         // 2. Per‑cell RGB smooth lerp and write to pixel buffer
-        float lerpRate = dt * 2.5f * animationSpeed;
+        float lerpRate = dt * 2.5f * settings.animationSpeed;
         for (int i = 0; i < cells.Length; i++)
         {
             if (cells[i].progress < 1.0f)
@@ -139,6 +211,28 @@ public class HarmonicGridVisualizer : MonoBehaviour
         gridTexture.SetPixels32(pixelBuffer);
         gridTexture.Apply(false);
     }
+
+    /// <summary>
+    /// Called when switching ModeA / ModeB in inspector
+    /// </summary>
+    void OnModeSwitched()
+    {
+        ModeSettings settings = GetActiveModeSettings();
+        Color[] activePalette = settings.palette;
+        for (int y = 0; y < GRID_SIZE; y++)
+        {
+            for (int x = 0; x < GRID_SIZE; x++)
+            {
+                int idx = y * GRID_SIZE + x;
+                float noiseVal = PseudoNoise2D(x, y, elapsedTime * 0.45f);
+                int colorIdx = Mathf.FloorToInt(noiseVal * activePalette.Length) % activePalette.Length;
+                Color newTarget = activePalette[colorIdx];
+                cells[idx].targetColor = newTarget;
+                cells[idx].progress = smoothTransition ? 0f : 1f;
+            }
+        }
+    }
+
     /// <summary>
     /// Core flow function: multi‑frequency sine‑based 2D pseudo‑continuous noise field
     /// </summary>
@@ -156,6 +250,7 @@ public class HarmonicGridVisualizer : MonoBehaviour
         // Normalize result to [0, 1]
         return (s1 + s2 + s3 + 3f) / 6f;
     }
+
     private void OnDestroy()
     {
         if (gridTexture != null)

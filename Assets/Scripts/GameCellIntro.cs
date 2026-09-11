@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace ConwayGame
 {
-    public class GameCell : MonoBehaviour
+    public class GameCellIntro : MonoBehaviour
     {
         public int xCoOrd;
         public int yCoOrd;
@@ -157,7 +157,7 @@ namespace ConwayGame
 
         public void OnCellClicked()
         {
-            ConwayCore.Instance.BeginNegativeWave(this);
+            ConwayCoreIntro.Instance.BeginNegativeWave(this);
         }
     }
 }

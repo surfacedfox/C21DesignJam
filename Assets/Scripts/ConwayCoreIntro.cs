@@ -14,9 +14,9 @@ namespace ConwayGame
         Blank
     }
 
-    public class ConwayCore : MonoBehaviour
+    public class ConwayCoreIntro : MonoBehaviour
     {
-        public static ConwayCore Instance { get; private set; }
+        public static ConwayCoreIntro Instance { get; private set; }
 
         [Header("References")]
         [SerializeField] private GameObject gameCellPrefab;
@@ -38,9 +38,9 @@ namespace ConwayGame
         [SerializeField] private TMP_Text autoRunText;
         [SerializeField] private Button stepButton;
 
-        private readonly List<GameCell> gameCellList = new List<GameCell>();
-        private readonly Dictionary<Vector2Int, GameCell> gameCellsByPosition =
-            new Dictionary<Vector2Int, GameCell>();
+        private readonly List<GameCellIntro> gameCellList = new List<GameCellIntro>();
+        private readonly Dictionary<Vector2Int, GameCellIntro> gameCellsByPosition =
+            new Dictionary<Vector2Int, GameCellIntro>();
 
         private Coroutine gameStepCoroutine;
         private bool waveActive;
@@ -85,7 +85,7 @@ namespace ConwayGame
 
             for (int i = 0; i < numGridSize * numGridSize; i++)
             {
-                GameCell newCell = Instantiate(gameCellPrefab, gridTransform).GetComponent<GameCell>();
+                GameCellIntro newCell = Instantiate(gameCellPrefab, gridTransform).GetComponent<GameCellIntro>();
                 newCell.xCoOrd = i % numGridSize;
                 newCell.yCoOrd = i / numGridSize;
                 gameCellList.Add(newCell);
@@ -140,9 +140,9 @@ namespace ConwayGame
 
             waveStep++;
 
-            Dictionary<GameCell, State> stateSnapshot = new Dictionary<GameCell, State>(gameCellList.Count);
-            List<GameCell> negativeCells = new List<GameCell>();
-            foreach (GameCell cell in gameCellList)
+            Dictionary<GameCellIntro, State> stateSnapshot = new Dictionary<GameCellIntro, State>(gameCellList.Count);
+            List<GameCellIntro> negativeCells = new List<GameCellIntro>();
+            foreach (GameCellIntro cell in gameCellList)
             {
                 State state = cell.GetCellState();
                 stateSnapshot.Add(cell, state);
@@ -152,11 +152,11 @@ namespace ConwayGame
                 }
             }
 
-            HashSet<GameCell> cellsToInfect = new HashSet<GameCell>();
-            HashSet<GameCell> cellsToRecover = new HashSet<GameCell>();
+            HashSet<GameCellIntro> cellsToInfect = new HashSet<GameCellIntro>();
+            HashSet<GameCellIntro> cellsToRecover = new HashSet<GameCellIntro>();
             int infectionTargetCount = TransitionRules.GetInfectionTargetCount(waveStep);
 
-            foreach (GameCell sourceCell in negativeCells)
+            foreach (GameCellIntro sourceCell in negativeCells)
             {
                 sourceCell.AdvanceNegativeCounters();
 
@@ -169,7 +169,7 @@ namespace ConwayGame
 
                 if (Random.value < infectionChance)
                 {
-                    List<GameCell> positiveNeighbors = GetPositiveNeighbors(sourceCell, stateSnapshot);
+                    List<GameCellIntro> positiveNeighbors = GetPositiveNeighbors(sourceCell, stateSnapshot);
                     Shuffle(positiveNeighbors);
                     int targetCount = Mathf.Min(infectionTargetCount, positiveNeighbors.Count);
                     for (int i = 0; i < targetCount; i++)
@@ -184,12 +184,12 @@ namespace ConwayGame
                 }
             }
 
-            foreach (GameCell cell in cellsToInfect)
+            foreach (GameCellIntro cell in cellsToInfect)
             {
                 cell.SetState(State.Blank);
             }
 
-            foreach (GameCell cell in cellsToRecover)
+            foreach (GameCellIntro cell in cellsToRecover)
             {
                 cell.SetState(State.Fill);
             }
@@ -203,11 +203,11 @@ namespace ConwayGame
             }
         }
 
-        private List<GameCell> GetPositiveNeighbors(
-            GameCell sourceCell,
-            IReadOnlyDictionary<GameCell, State> stateSnapshot)
+        private List<GameCellIntro> GetPositiveNeighbors(
+            GameCellIntro sourceCell,
+            IReadOnlyDictionary<GameCellIntro, State> stateSnapshot)
         {
-            List<GameCell> neighbors = new List<GameCell>(8);
+            List<GameCellIntro> neighbors = new List<GameCellIntro>(8);
 
             for (int yOffset = -1; yOffset <= 1; yOffset++)
             {
@@ -218,7 +218,7 @@ namespace ConwayGame
                         continue;
                     }
 
-                    GameCell neighbor = GetCellAtLocation(
+                    GameCellIntro neighbor = GetCellAtLocation(
                         sourceCell.xCoOrd + xOffset,
                         sourceCell.yCoOrd + yOffset);
                     if (neighbor != null && stateSnapshot[neighbor] == State.Fill)
@@ -242,7 +242,7 @@ namespace ConwayGame
 
         private bool HasNegativeCells()
         {
-            foreach (GameCell cell in gameCellList)
+            foreach (GameCellIntro cell in gameCellList)
             {
                 if (cell.GetCellState() == State.Blank)
                 {
@@ -261,13 +261,13 @@ namespace ConwayGame
             gameCellsByPosition.Clear();
         }
 
-        public GameCell GetCellAtLocation(int x, int y)
+        public GameCellIntro GetCellAtLocation(int x, int y)
         {
-            gameCellsByPosition.TryGetValue(new Vector2Int(x, y), out GameCell cell);
+            gameCellsByPosition.TryGetValue(new Vector2Int(x, y), out GameCellIntro cell);
             return cell;
         }
 
-        public void BeginNegativeWave(GameCell sourceCell)
+        public void BeginNegativeWave(GameCellIntro sourceCell)
         {
             if (sourceCell == null)
             {

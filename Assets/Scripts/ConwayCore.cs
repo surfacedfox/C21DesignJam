@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -55,6 +56,11 @@ namespace ConwayGame
             else
             {
                 Instance = this;
+
+                int cellCount = numGridSize * numGridSize;
+                DOTween.SetTweensCapacity(
+                    Mathf.Max(200, cellCount * 5),
+                    Mathf.Max(50, cellCount * 2));
             }
         }
 

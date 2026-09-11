@@ -59,16 +59,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0}
+  m_Color: {r: 0.9647059, g: 0.78431374, b: 0.37254903, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
-  m_PreserveAspect: 0
+  m_Sprite: {fileID: 21300000, guid: 80acb391b886d41b1b1a9800b530526e, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1
@@ -247,4 +247,11 @@ MonoBehaviour:
   xCoOrd: 0
   yCoOrd: 0
   cellState: 0
-  prevState: 0
+  freezeState: 0
+  stateImage: {fileID: 1301556111825687642}
+  positiveSprite: {fileID: 21300000, guid: 80acb391b886d41b1b1a9800b530526e, type: 3}
+  negativeSprite: {fileID: 21300000, guid: 246910037240c495f980bc89a4bf7e80, type: 3}
+  positiveColor: {r: 0.9647059, g: 0.78431374, b: 0.37254903, a: 1}
+  negativeColor: {r: 0.9411765, g: 0.44313726, b: 0.47058824, a: 1}
+  transitionDuration: 0.2
+  transitionScale: 0.9

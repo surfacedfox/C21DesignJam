@@ -9,7 +9,10 @@ namespace ConwayGame
         public int xCoOrd;
         public int yCoOrd;
         public State cellState;
-        public State freezeState;
+
+        [Header("Transition State")]
+        [SerializeField, Min(0)] private int recoveryCountN;
+        [SerializeField, Min(0)] private int infectionCountM;
 
         [Header("State Visuals")]
         [SerializeField] private Image stateImage;
@@ -24,6 +27,9 @@ namespace ConwayGame
         private State renderedState;
         private bool hasRenderedState;
 
+        public int RecoveryCountN => recoveryCountN;
+        public int InfectionCountM => infectionCountM;
+
         private void Awake()
         {
             if (stateImage == null)
@@ -35,91 +41,22 @@ namespace ConwayGame
             RenderStateVisual(cellState, false);
         }
 
-        public void UpdateState(bool wasExtrinsic = false)
-        {
-            //gather neighbours
-            var northCell = ConwayCore.Instance.GetCellAtLocation(xCoOrd, yCoOrd + 1);
-            var southCell = ConwayCore.Instance.GetCellAtLocation(xCoOrd, yCoOrd - 1);
-            var eastCell = ConwayCore.Instance.GetCellAtLocation(xCoOrd + 1, yCoOrd);
-            var westCell = ConwayCore.Instance.GetCellAtLocation(xCoOrd - 1, yCoOrd);
-            int goodScore = 0;
-            int badScore = 0;
-            //check for nulls before
-            if (northCell != null)
-            {
-                if (northCell.cellState == State.Fill)
-                {
-                    goodScore++;
-                }
-                else
-                {
-                    badScore++;
-                }
-            }
-            if (southCell != null)
-            {
-                if (southCell.cellState == State.Fill)
-                {
-                    goodScore++;
-                }
-                else
-                {
-                    badScore++;
-                }
-            }
-            if (eastCell != null)
-            {
-                if (eastCell.cellState == State.Fill)
-                {
-                    goodScore++;
-                }
-                else
-                {
-                    badScore++;
-                }
-            }
-            if (westCell != null)
-            {
-                if (westCell.cellState == State.Fill)
-                {
-                    goodScore++;
-                }
-                else
-                {
-                    badScore++;
-                }
-            }
-            if (ConwayCore.Instance.coolDownTimer > 0)
-            {
-                if (ConwayCore.Instance.paintPickedState == State.Blank)
-                {
-                    goodScore = goodScore * 6;
-                }
-                else
-                {
-                    badScore = badScore * 6;
-                }
-            }
-            float score = goodScore * 17.0f - badScore * 10.0f;
-
-            if (Random.Range(0.0f, 100.0f) >= score)
-            {
-                cellState = State.Fill;
-            }
-            else { cellState = State.Blank; }
-        }
-
         public State GetCellState()
         {
             return cellState;
         }
 
-        public void SetState(State nextState, bool animate = true)
+        public void SetState(State nextState, bool animate = true, bool restartNegativeCounters = false)
         {
             bool stateChanged = nextState != cellState;
 
             if (!stateChanged)
             {
+                if (nextState == State.Blank && restartNegativeCounters)
+                {
+                    ResetTransitionCounters();
+                }
+
                 if (!hasRenderedState)
                 {
                     RenderStateVisual(cellState, false);
@@ -129,20 +66,25 @@ namespace ConwayGame
             }
 
             cellState = nextState;
+            ResetTransitionCounters();
             RenderStateVisual(cellState, animate);
         }
 
-        // Kept as a compatibility wrapper for the existing simulation loop.
-        public void PaintCell()
+        public void AdvanceNegativeCounters()
         {
-            if (!hasRenderedState)
+            if (cellState != State.Blank)
             {
-                RenderStateVisual(cellState, false);
+                return;
             }
-            else if (renderedState != cellState)
-            {
-                RenderStateVisual(cellState, true);
-            }
+
+            recoveryCountN++;
+            infectionCountM++;
+        }
+
+        private void ResetTransitionCounters()
+        {
+            recoveryCountN = 0;
+            infectionCountM = 0;
         }
 
         private void RenderStateVisual(State state, bool animate)
@@ -213,13 +155,9 @@ namespace ConwayGame
             }
         }
 
-        //DEBUG
         public void OnCellClicked()
         {
-            State selectedState = ConwayCore.Instance.paintPickedState;
-            SetState(selectedState);
-            freezeState = cellState;
-            ConwayCore.Instance.BeginWave(selectedState);
+            ConwayCore.Instance.BeginNegativeWave(this);
         }
     }
 }

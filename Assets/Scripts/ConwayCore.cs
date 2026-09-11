@@ -2,14 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
 using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace ConwayGame
 {
-
     public enum State
     {
         Fill,
@@ -23,154 +21,291 @@ namespace ConwayGame
         [Header("References")]
         [SerializeField] private GameObject gameCellPrefab;
         [SerializeField] private GameObject gridLG;
-        [Header("Game Setup")]
-        [SerializeField] private int numGridSize;
-        [SerializeField] public float stepTimer;
-        [SerializeField] private int coolDownSteps = 10;
-        [SerializeField] public Color goodColor;
-        [SerializeField] public Color badColor;
-        [Header("Game Debug")]
-        [SerializeField] private bool autoRun = true;
-        [SerializeField] public State paintPickedState = State.Fill;
-        [Header("Game Debug UI Button Refs")]
-        [SerializeField] private TMP_Text autoRunText;
-        [SerializeField] private Button stepButton;
-        [SerializeField] private Image pickerColorImage;
         [SerializeField] private WaveAudioController waveAudioController;
 
+        [Header("Game Setup")]
+        [SerializeField] private int numGridSize;
+        [SerializeField, Range(0.25f, 10f)]
+        [Tooltip("Simulation steps per second. Higher values make the wave move more smoothly.")]
+        private float simulationStepsPerSecond = 3f;
 
+        [Header("Transition Rules")]
+        [SerializeField, Min(0f)] private float recoveryRateX = 10f;
+        [SerializeField, Min(0f)] private float infectionDecayY = 10f;
 
-        public int coolDownTimer;
+        [Header("Game Debug")]
+        [SerializeField] private bool autoRun = true;
+        [SerializeField] private TMP_Text autoRunText;
+        [SerializeField] private Button stepButton;
 
+        private readonly List<GameCell> gameCellList = new List<GameCell>();
+        private readonly Dictionary<Vector2Int, GameCell> gameCellsByPosition =
+            new Dictionary<Vector2Int, GameCell>();
 
-        //private vars for setup
-        private List<GameCell> gameCellList = new List<GameCell>();
+        private Coroutine gameStepCoroutine;
+        private bool waveActive;
+        private int waveStep;
 
-        //Singleton boilerplate
         private void Awake()
         {
-            // If there is an instance, and it's not me, delete myself.
-
             if (Instance != null && Instance != this)
             {
                 Destroy(this);
+                return;
             }
-            else
+
+            Instance = this;
+
+            int cellCount = numGridSize * numGridSize;
+            DOTween.SetTweensCapacity(
+                Mathf.Max(200, cellCount * 5),
+                Mathf.Max(50, cellCount * 2));
+
+            if (waveAudioController == null)
             {
-                Instance = this;
+                waveAudioController = GetComponent<WaveAudioController>();
+            }
 
-                int cellCount = numGridSize * numGridSize;
-                DOTween.SetTweensCapacity(
-                    Mathf.Max(200, cellCount * 5),
-                    Mathf.Max(50, cellCount * 2));
-
-                if (waveAudioController == null)
-                {
-                    waveAudioController = GetComponent<WaveAudioController>();
-                }
-
-                if (waveAudioController == null)
-                {
-                    waveAudioController = gameObject.AddComponent<WaveAudioController>();
-                }
+            if (waveAudioController == null)
+            {
+                waveAudioController = gameObject.AddComponent<WaveAudioController>();
             }
         }
 
-        // Start is called once before the first execution of Update after the MonoBehaviour is created
-        void Start()
+        private void Start()
         {
-            coolDownTimer = 0;
-            gridLG.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, numGridSize * gridLG.GetComponent<GridLayoutGroup>().cellSize.x);
-            gridLG.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, numGridSize * gridLG.GetComponent<GridLayoutGroup>().cellSize.y);
-            for (int i = 0; i < (numGridSize * numGridSize); i++)
+            GridLayoutGroup gridLayout = gridLG.GetComponent<GridLayoutGroup>();
+            RectTransform gridTransform = gridLG.GetComponent<RectTransform>();
+            gridTransform.SetSizeWithCurrentAnchors(
+                RectTransform.Axis.Horizontal,
+                numGridSize * gridLayout.cellSize.x);
+            gridTransform.SetSizeWithCurrentAnchors(
+                RectTransform.Axis.Vertical,
+                numGridSize * gridLayout.cellSize.y);
+
+            for (int i = 0; i < numGridSize * numGridSize; i++)
             {
-                var newCell = GameObject.Instantiate(gameCellPrefab, gridLG.GetComponent<RectTransform>()).GetComponent<GameCell>();
+                GameCell newCell = Instantiate(gameCellPrefab, gridTransform).GetComponent<GameCell>();
                 newCell.xCoOrd = i % numGridSize;
                 newCell.yCoOrd = i / numGridSize;
                 gameCellList.Add(newCell);
+                gameCellsByPosition.Add(new Vector2Int(newCell.xCoOrd, newCell.yCoOrd), newCell);
             }
-
 
             if (autoRun)
             {
-                //Finally, start the sim
-                StartCoroutine(GameStep());
+                StartAutoRun();
+            }
+
+            UpdateDebugControls();
+        }
+
+        private IEnumerator GameStep()
+        {
+            while (autoRun)
+            {
+                float stepInterval = 1f / Mathf.Max(0.25f, simulationStepsPerSecond);
+                yield return new WaitForSeconds(stepInterval);
+                StepNext();
+            }
+
+            gameStepCoroutine = null;
+        }
+
+        private void StartAutoRun()
+        {
+            if (gameStepCoroutine == null)
+            {
+                gameStepCoroutine = StartCoroutine(GameStep());
             }
         }
 
-        IEnumerator GameStep()
+        private void StopAutoRun()
         {
-            yield return new WaitForSeconds(stepTimer);
-            StepNext();
-            if (autoRun)
+            if (gameStepCoroutine == null)
             {
-                StartCoroutine(GameStep());
+                return;
             }
-            else
-            {
-                StopCoroutine(GameStep());
-            }
+
+            StopCoroutine(gameStepCoroutine);
+            gameStepCoroutine = null;
         }
 
-        void StepNext()
+        private void StepNext()
         {
-            foreach (var cell in gameCellList)
+            if (!waveActive)
             {
-                cell.UpdateState();
-                cell.PaintCell();
+                return;
             }
-            coolDownTimer--;
+
+            waveStep++;
+
+            Dictionary<GameCell, State> stateSnapshot = new Dictionary<GameCell, State>(gameCellList.Count);
+            List<GameCell> negativeCells = new List<GameCell>();
+            foreach (GameCell cell in gameCellList)
+            {
+                State state = cell.GetCellState();
+                stateSnapshot.Add(cell, state);
+                if (state == State.Blank)
+                {
+                    negativeCells.Add(cell);
+                }
+            }
+
+            HashSet<GameCell> cellsToInfect = new HashSet<GameCell>();
+            HashSet<GameCell> cellsToRecover = new HashSet<GameCell>();
+            int infectionTargetCount = TransitionRules.GetInfectionTargetCount(waveStep);
+
+            foreach (GameCell sourceCell in negativeCells)
+            {
+                sourceCell.AdvanceNegativeCounters();
+
+                float recoveryChance = TransitionRules.GetRecoveryChance(
+                    sourceCell.RecoveryCountN,
+                    recoveryRateX);
+                float infectionChance = TransitionRules.GetInfectionChance(
+                    sourceCell.InfectionCountM,
+                    infectionDecayY);
+
+                if (Random.value < infectionChance)
+                {
+                    List<GameCell> positiveNeighbors = GetPositiveNeighbors(sourceCell, stateSnapshot);
+                    Shuffle(positiveNeighbors);
+                    int targetCount = Mathf.Min(infectionTargetCount, positiveNeighbors.Count);
+                    for (int i = 0; i < targetCount; i++)
+                    {
+                        cellsToInfect.Add(positiveNeighbors[i]);
+                    }
+                }
+
+                if (Random.value < recoveryChance)
+                {
+                    cellsToRecover.Add(sourceCell);
+                }
+            }
+
+            foreach (GameCell cell in cellsToInfect)
+            {
+                cell.SetState(State.Blank);
+            }
+
+            foreach (GameCell cell in cellsToRecover)
+            {
+                cell.SetState(State.Fill);
+            }
+
             waveAudioController.PlayNextWaveStep();
+
+            if (!HasNegativeCells())
+            {
+                waveActive = false;
+                waveAudioController.StopWave();
+            }
+        }
+
+        private List<GameCell> GetPositiveNeighbors(
+            GameCell sourceCell,
+            IReadOnlyDictionary<GameCell, State> stateSnapshot)
+        {
+            List<GameCell> neighbors = new List<GameCell>(8);
+
+            for (int yOffset = -1; yOffset <= 1; yOffset++)
+            {
+                for (int xOffset = -1; xOffset <= 1; xOffset++)
+                {
+                    if (xOffset == 0 && yOffset == 0)
+                    {
+                        continue;
+                    }
+
+                    GameCell neighbor = GetCellAtLocation(
+                        sourceCell.xCoOrd + xOffset,
+                        sourceCell.yCoOrd + yOffset);
+                    if (neighbor != null && stateSnapshot[neighbor] == State.Fill)
+                    {
+                        neighbors.Add(neighbor);
+                    }
+                }
+            }
+
+            return neighbors;
+        }
+
+        private static void Shuffle<T>(IList<T> items)
+        {
+            for (int i = items.Count - 1; i > 0; i--)
+            {
+                int swapIndex = Random.Range(0, i + 1);
+                (items[i], items[swapIndex]) = (items[swapIndex], items[i]);
+            }
+        }
+
+        private bool HasNegativeCells()
+        {
+            foreach (GameCell cell in gameCellList)
+            {
+                if (cell.GetCellState() == State.Blank)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void OnApplicationQuit()
         {
-            gameCellList.Clear();
             waveAudioController.StopWave();
             StopAllCoroutines();
+            gameCellList.Clear();
+            gameCellsByPosition.Clear();
         }
 
         public GameCell GetCellAtLocation(int x, int y)
         {
-            foreach(var cell in gameCellList)
-            {
-                if(cell.xCoOrd == x && cell.yCoOrd == y)
-                    return cell;
-            }
-            return null;
+            gameCellsByPosition.TryGetValue(new Vector2Int(x, y), out GameCell cell);
+            return cell;
         }
 
+        public void BeginNegativeWave(GameCell sourceCell)
+        {
+            if (sourceCell == null)
+            {
+                return;
+            }
 
+            sourceCell.SetState(State.Blank, true, true);
+            waveStep = 0;
+            waveActive = true;
+            waveAudioController.BeginWave(State.Blank);
+        }
 
-
-        //Input Buttons
         public void AutoRunButtonPressed()
         {
+            autoRun = !autoRun;
             if (autoRun)
             {
-                autoRun = false;
-                StopCoroutine(GameStep());
+                StartAutoRun();
             }
             else
             {
-                autoRun = true;
-                StartCoroutine(GameStep());
+                StopAutoRun();
             }
+
+            UpdateDebugControls();
         }
 
-        public void FillPicked()
+        private void UpdateDebugControls()
         {
-            ConwayCore.Instance.coolDownTimer = 10;
-            paintPickedState = State.Fill;
-        }
-        public void BlankPicked()
-        {
-            ConwayCore.Instance.coolDownTimer = 10;
-            paintPickedState = State.Blank;
-        }
-        void UpdatePickedColorUI()
-        {
-            pickerColorImage.color = paintPickedState==State.Fill?Color.hotPink : Color.cornflowerBlue;
+            if (autoRunText != null)
+            {
+                autoRunText.text = autoRun ? "AutoRun: ON" : "AutoRun: OFF";
+            }
+
+            if (stepButton != null)
+            {
+                stepButton.gameObject.SetActive(!autoRun);
+            }
         }
 
         public void OnReset()
@@ -179,15 +314,9 @@ namespace ConwayGame
             SceneManager.LoadScene(0);
         }
 
-        public void BeginWave(State waveState)
-        {
-            waveAudioController.BeginWave(waveState);
-        }
-
         public void NextStepButtonPressed()
         {
             StepNext();
         }
-
     }
 }

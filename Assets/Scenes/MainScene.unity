@@ -292,7 +292,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &160433709
 RectTransform:
   m_ObjectHideFlags: 0
@@ -561,7 +561,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &295804766
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1123,13 +1123,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   gameCellPrefab: {fileID: 7784060224910588475, guid: 3d30c8fb5e7a2614f97be1f4408ac54b, type: 3}
   gridLG: {fileID: 1422276155}
+  waveAudioController: {fileID: 0}
   numGridSize: 10
-  stepTimer: 1
+  simulationStepsPerSecond: 3
+  recoveryRateX: 10
+  infectionDecayY: 10
   autoRun: 1
-  paintPickedState: 1
   autoRunText: {fileID: 1305591885}
   stepButton: {fileID: 1189781221}
-  pickerColorImage: {fileID: 2101493805}
 --- !u!114 &692940910
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1767,7 +1768,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1983076226
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1899,7 +1900,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2101493804
 RectTransform:
   m_ObjectHideFlags: 0

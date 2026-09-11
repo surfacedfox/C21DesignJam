@@ -10,9 +10,65 @@ namespace ConwayGame
         public int yCoOrd;
         public State cellState;
         public State freezeState;
+        public State? unappliedWaveState;
+        public State? waveState = null;
+        public int waveStepsRemaining = 0;
+
+        public void AdvanceWave()
+        {
+            if (waveState == null) return;
+
+            var northCell = ConwayCore.Instance.GetCellAtLocation(xCoOrd, yCoOrd + 1);
+            var southCell = ConwayCore.Instance.GetCellAtLocation(xCoOrd, yCoOrd - 1);
+            var eastCell = ConwayCore.Instance.GetCellAtLocation(xCoOrd + 1, yCoOrd);
+            var westCell = ConwayCore.Instance.GetCellAtLocation(xCoOrd - 1, yCoOrd);
+
+            if (northCell != null)
+            {
+                northCell.unappliedWaveState = this.waveState;
+            }
+
+            if (southCell != null)
+            {
+                southCell.unappliedWaveState = this.waveState;
+            }
+
+            if (eastCell != null)
+            {
+                eastCell.unappliedWaveState = this.waveState;
+            }
+
+            if (westCell != null)
+            {
+                westCell.unappliedWaveState = this.waveState;
+            }
+        }
 
         public void UpdateState(bool wasExtrinsic = false)
         {
+            if (unappliedWaveState != null)
+            {
+                freezeState = cellState;
+                waveState = unappliedWaveState;
+                unappliedWaveState = null;
+
+                waveStepsRemaining = Random.Range(2, 5);
+            }
+
+            if (waveState != null)
+            {
+                cellState = waveState.Value;
+
+                waveStepsRemaining--;
+                if (waveStepsRemaining == 1)
+                {
+                    waveState = null;
+                    cellState = State.Fill;
+                }
+
+                return;
+            }
+
             //gather neighbours
             var northCell = ConwayCore.Instance.GetCellAtLocation(xCoOrd, yCoOrd + 1);
             var southCell = ConwayCore.Instance.GetCellAtLocation(xCoOrd, yCoOrd - 1);
@@ -65,17 +121,17 @@ namespace ConwayGame
                     badScore++;
                 }
             }
-            if (ConwayCore.Instance.coolDownTimer > 0)
-            {
-                if (ConwayCore.Instance.paintPickedState == State.Blank)
-                {
-                    goodScore = goodScore * 6;
-                }
-                else
-                {
-                    badScore = badScore * 6;
-                }
-            }
+//            if (ConwayCore.Instance.coolDownTimer > 0)
+//            {
+//                if (ConwayCore.Instance.paintPickedState == State.Blank)
+//                {
+//                    goodScore = goodScore * 6;
+//                }
+//                else
+//                {
+//                    badScore = badScore * 6;
+//                }
+//            }
             float score = goodScore * 17.0f - badScore * 10.0f;
 
             if (Random.Range(0.0f, 100.0f) >= score)
@@ -111,9 +167,10 @@ namespace ConwayGame
         //DEBUG
         public void OnCellClicked()
         {
-            
-            cellState = ConwayCore.Instance.paintPickedState;
+            waveState = ConwayCore.Instance.paintPickedState;
+            waveStepsRemaining = Random.Range(3, 5);
             freezeState = cellState;
+            cellState = ConwayCore.Instance.paintPickedState;
             PaintCell();
         }
     }

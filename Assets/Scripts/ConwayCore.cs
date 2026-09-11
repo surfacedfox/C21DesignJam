@@ -12,7 +12,7 @@ namespace ConwayGame
     public enum State
     {
         Fill,
-        Blank
+        Blank,
     }
 
     public class ConwayCore : MonoBehaviour
@@ -97,6 +97,10 @@ namespace ConwayGame
 
         void StepNext()
         {
+            foreach (var cell in gameCellList)
+            {
+                cell.AdvanceWave();
+            }
             foreach (var cell in gameCellList)
             {
                 cell.UpdateState();

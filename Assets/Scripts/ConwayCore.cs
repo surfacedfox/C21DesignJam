@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace ConwayGame
@@ -152,8 +153,11 @@ namespace ConwayGame
         {
             pickerColorImage.color = paintPickedState==State.Fill?Color.hotPink : Color.cornflowerBlue;
         }
-            
 
+        public void OnReset()
+        {
+            SceneManager.LoadScene(0);
+        }
 
         public void NextStepButtonPressed()
         {

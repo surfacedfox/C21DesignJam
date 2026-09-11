@@ -1128,6 +1128,9 @@ MonoBehaviour:
   simulationStepsPerSecond: 3
   recoveryRateX: 10
   infectionDecayY: 10
+  convergenceDelaySeconds: 8
+  retainedNegativeCellCount: 12
+  outsideRecoveryDurationSeconds: 4
   autoRun: 1
   autoRunText: {fileID: 1305591885}
   stepButton: {fileID: 1189781221}

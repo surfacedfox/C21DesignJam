@@ -33,6 +33,17 @@ namespace ConwayGame
         [SerializeField, Min(0f)] private float recoveryRateX = 10f;
         [SerializeField, Min(0f)] private float infectionDecayY = 10f;
 
+        [Header("Convergence Rules")]
+        [SerializeField, Min(0f)]
+        [Tooltip("Real-time seconds after a click before the wave settles.")]
+        private float convergenceDelaySeconds = 8f;
+        [SerializeField, Min(0)]
+        [Tooltip("Number of connected cells that remain Negative after the wave settles.")]
+        private int retainedNegativeCellCount = 12;
+        [SerializeField, Min(0f)]
+        [Tooltip("Real-time seconds for all other Negative cells to gradually recover.")]
+        private float outsideRecoveryDurationSeconds = 4f;
+
         [Header("Game Debug")]
         [SerializeField] private bool autoRun = true;
         [SerializeField] private TMP_Text autoRunText;
@@ -41,10 +52,14 @@ namespace ConwayGame
         private readonly List<GameCell> gameCellList = new List<GameCell>();
         private readonly Dictionary<Vector2Int, GameCell> gameCellsByPosition =
             new Dictionary<Vector2Int, GameCell>();
+        private readonly HashSet<GameCell> retainedNegativeCells = new HashSet<GameCell>();
 
         private Coroutine gameStepCoroutine;
+        private Coroutine convergenceCoroutine;
         private bool waveActive;
+        private bool convergenceStarted;
         private int waveStep;
+        private float waveStartedAt;
 
         private void Awake()
         {
@@ -55,7 +70,6 @@ namespace ConwayGame
             }
 
             Instance = this;
-
             int cellCount = numGridSize * numGridSize;
             DOTween.SetTweensCapacity(
                 Mathf.Max(200, cellCount * 5),
@@ -98,6 +112,19 @@ namespace ConwayGame
             }
 
             UpdateDebugControls();
+        }
+
+        private void Update()
+        {
+            if (!waveActive || convergenceStarted)
+            {
+                return;
+            }
+
+            if (Time.unscaledTime - waveStartedAt >= convergenceDelaySeconds)
+            {
+                BeginConvergence();
+            }
         }
 
         private IEnumerator GameStep()
@@ -178,7 +205,7 @@ namespace ConwayGame
                     }
                 }
 
-                if (Random.value < recoveryChance)
+                if (!retainedNegativeCells.Contains(sourceCell) && Random.value < recoveryChance)
                 {
                     cellsToRecover.Add(sourceCell);
                 }
@@ -195,12 +222,6 @@ namespace ConwayGame
             }
 
             waveAudioController.PlayNextWaveStep();
-
-            if (!HasNegativeCells())
-            {
-                waveActive = false;
-                waveAudioController.StopWave();
-            }
         }
 
         private List<GameCell> GetPositiveNeighbors(
@@ -240,25 +261,134 @@ namespace ConwayGame
             }
         }
 
-        private bool HasNegativeCells()
+        private void BuildRetainedNegativeArea(GameCell sourceCell)
         {
+            retainedNegativeCells.Clear();
+
+            int targetCount = Mathf.Clamp(retainedNegativeCellCount, 0, gameCellList.Count);
+            if (sourceCell == null || targetCount == 0)
+            {
+                return;
+            }
+
+            retainedNegativeCells.Add(sourceCell);
+            List<GameCell> frontier = new List<GameCell>();
+            AddCardinalNeighborsToFrontier(sourceCell, frontier);
+
+            while (retainedNegativeCells.Count < targetCount && frontier.Count > 0)
+            {
+                int index = Random.Range(0, frontier.Count);
+                GameCell nextCell = frontier[index];
+                frontier.RemoveAt(index);
+
+                if (!retainedNegativeCells.Add(nextCell))
+                {
+                    continue;
+                }
+
+                AddCardinalNeighborsToFrontier(nextCell, frontier);
+            }
+        }
+
+        private void AddCardinalNeighborsToFrontier(GameCell sourceCell, List<GameCell> frontier)
+        {
+            AddToFrontier(GetCellAtLocation(sourceCell.xCoOrd - 1, sourceCell.yCoOrd), frontier);
+            AddToFrontier(GetCellAtLocation(sourceCell.xCoOrd + 1, sourceCell.yCoOrd), frontier);
+            AddToFrontier(GetCellAtLocation(sourceCell.xCoOrd, sourceCell.yCoOrd - 1), frontier);
+            AddToFrontier(GetCellAtLocation(sourceCell.xCoOrd, sourceCell.yCoOrd + 1), frontier);
+        }
+
+        private void AddToFrontier(GameCell cell, List<GameCell> frontier)
+        {
+            if (cell == null || retainedNegativeCells.Contains(cell) || frontier.Contains(cell))
+            {
+                return;
+            }
+
+            frontier.Add(cell);
+        }
+
+        private void BeginConvergence()
+        {
+            if (!waveActive || convergenceStarted)
+            {
+                return;
+            }
+
+            convergenceStarted = true;
+            waveActive = false;
+            waveAudioController.StopWave();
+
+            foreach (GameCell retainedCell in retainedNegativeCells)
+            {
+                retainedCell.SetState(State.Blank);
+            }
+
+            List<GameCell> cellsToRecover = new List<GameCell>();
             foreach (GameCell cell in gameCellList)
             {
-                if (cell.GetCellState() == State.Blank)
+                if (cell.GetCellState() == State.Blank && !retainedNegativeCells.Contains(cell))
                 {
-                    return true;
+                    cellsToRecover.Add(cell);
                 }
             }
 
-            return false;
+            Shuffle(cellsToRecover);
+            convergenceCoroutine = StartCoroutine(RecoverOutsideArea(cellsToRecover));
+        }
+
+        private IEnumerator RecoverOutsideArea(IReadOnlyList<GameCell> cellsToRecover)
+        {
+            if (cellsToRecover.Count > 0 && outsideRecoveryDurationSeconds > 0f)
+            {
+                float interval = outsideRecoveryDurationSeconds / cellsToRecover.Count;
+                WaitForSecondsRealtime delay = new WaitForSecondsRealtime(interval);
+
+                foreach (GameCell cell in cellsToRecover)
+                {
+                    yield return delay;
+                    RecoverOutsideCell(cell);
+                }
+            }
+            else
+            {
+                foreach (GameCell cell in cellsToRecover)
+                {
+                    RecoverOutsideCell(cell);
+                }
+            }
+
+            convergenceCoroutine = null;
+            convergenceStarted = false;
+        }
+
+        private void RecoverOutsideCell(GameCell cell)
+        {
+            if (cell != null && !retainedNegativeCells.Contains(cell))
+            {
+                cell.SetState(State.Fill);
+            }
+        }
+
+        private void CancelConvergence()
+        {
+            if (convergenceCoroutine != null)
+            {
+                StopCoroutine(convergenceCoroutine);
+                convergenceCoroutine = null;
+            }
+
+            convergenceStarted = false;
         }
 
         private void OnApplicationQuit()
         {
+            CancelConvergence();
             waveAudioController.StopWave();
             StopAllCoroutines();
             gameCellList.Clear();
             gameCellsByPosition.Clear();
+            retainedNegativeCells.Clear();
         }
 
         public GameCell GetCellAtLocation(int x, int y)
@@ -274,8 +404,11 @@ namespace ConwayGame
                 return;
             }
 
+            CancelConvergence();
             sourceCell.SetState(State.Blank, true, true);
+            BuildRetainedNegativeArea(sourceCell);
             waveStep = 0;
+            waveStartedAt = Time.unscaledTime;
             waveActive = true;
             waveAudioController.BeginWave(State.Blank);
         }
@@ -310,6 +443,7 @@ namespace ConwayGame
 
         public void OnReset()
         {
+            CancelConvergence();
             waveAudioController.StopWave();
             SceneManager.LoadScene(0);
         }

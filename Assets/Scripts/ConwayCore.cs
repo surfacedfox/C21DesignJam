@@ -24,6 +24,7 @@ namespace ConwayGame
         [Header("Game Setup")]
         [SerializeField] private int numGridSize;
         [SerializeField] private float stepTimer;
+        [SerializeField] private int coolDownSteps = 10;
         [Header("Game Debug")]
         [SerializeField] private bool autoRun = true;
         [SerializeField] public State paintPickedState = State.Fill;
@@ -32,6 +33,8 @@ namespace ConwayGame
         [SerializeField] private Button stepButton;
         [SerializeField] private Image pickerColorImage;
 
+
+        public int coolDownTimer;
 
 
         //private vars for setup
@@ -55,6 +58,7 @@ namespace ConwayGame
         // Start is called once before the first execution of Update after the MonoBehaviour is created
         void Start()
         {
+            coolDownTimer = 0;
             gridLG.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, numGridSize * gridLG.GetComponent<GridLayoutGroup>().cellSize.x);
             gridLG.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, numGridSize * gridLG.GetComponent<GridLayoutGroup>().cellSize.y);
             for (int i = 0; i < (numGridSize * numGridSize); i++)
@@ -94,6 +98,7 @@ namespace ConwayGame
                 cell.UpdateState();
                 cell.PaintCell();
             }
+            coolDownTimer--;
         }
 
         private void OnApplicationQuit()
@@ -102,7 +107,15 @@ namespace ConwayGame
             StopAllCoroutines();
         }
 
-
+        public GameCell GetCellAtLocation(int x, int y)
+        {
+            foreach(var cell in gameCellList)
+            {
+                if(cell.xCoOrd == x && cell.yCoOrd == y)
+                    return cell;
+            }
+            return null;
+        }
 
 
 

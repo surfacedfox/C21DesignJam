@@ -1,8 +1,6 @@
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
-using ConwayGame;
-using Unity.VisualScripting;
-using DG.Tweening;
 
 namespace ConwayGame
 {
@@ -11,16 +9,80 @@ namespace ConwayGame
         public int xCoOrd;
         public int yCoOrd;
         public State cellState;
-        public State prevState;
+        public State freezeState;
 
         public void UpdateState(bool wasExtrinsic = false)
         {
-            //RULES GO HERE, IF THIS.....THEN DO THIS
-            prevState = cellState;
-            if(wasExtrinsic)
+            //gather neighbours
+            var northCell = ConwayCore.Instance.GetCellAtLocation(xCoOrd, yCoOrd + 1);
+            var southCell = ConwayCore.Instance.GetCellAtLocation(xCoOrd, yCoOrd - 1);
+            var eastCell = ConwayCore.Instance.GetCellAtLocation(xCoOrd + 1, yCoOrd);
+            var westCell = ConwayCore.Instance.GetCellAtLocation(xCoOrd - 1, yCoOrd);
+            int goodScore = 0;
+            int badScore = 0;
+            //check for nulls before
+            if (northCell != null)
             {
-                //do extrinsic magic wooowoo stuff
+                if (northCell.cellState == State.Fill)
+                {
+                    goodScore++;
+                }
+                else
+                {
+                    badScore++;
+                }
             }
+            if (southCell != null)
+            {
+                if (southCell.cellState == State.Fill)
+                {
+                    goodScore++;
+                }
+                else
+                {
+                    badScore++;
+                }
+            }
+            if (eastCell != null)
+            {
+                if (eastCell.cellState == State.Fill)
+                {
+                    goodScore++;
+                }
+                else
+                {
+                    badScore++;
+                }
+            }
+            if (westCell != null)
+            {
+                if (westCell.cellState == State.Fill)
+                {
+                    goodScore++;
+                }
+                else
+                {
+                    badScore++;
+                }
+            }
+            if (ConwayCore.Instance.coolDownTimer > 0)
+            {
+                if (ConwayCore.Instance.paintPickedState == State.Fill)
+                {
+                    goodScore = goodScore * 6;
+                }
+                else
+                {
+                    badScore = badScore * 6;
+                }
+            }
+            float score = goodScore * 17.0f - badScore * 10.0f;
+
+            if (Random.Range(0.0f, 100.0f) >= score)
+            {
+                cellState = State.Fill;
+            }
+            else { cellState = State.Blank; }
         }
 
         public State GetCellState()
@@ -33,10 +95,10 @@ namespace ConwayGame
             switch (cellState)
             {
                 case State.Fill:
-                    GetComponent<Image>().DOColor(Color.hotPink, 1.0f);
+                    GetComponent<Image>().DOColor(Color.cornflowerBlue, 0.34f);
                     break;
                 case State.Blank:
-                    GetComponent<Image>().DOColor(Color.cornflowerBlue, 1.0f);
+                    GetComponent<Image>().DOColor(Color.hotPink, 0.34f);
                     break;
                 default:
                     GetComponent<Image>().color = Color.white;
@@ -49,7 +111,9 @@ namespace ConwayGame
         //DEBUG
         public void OnCellClicked()
         {
+            ConwayCore.Instance.coolDownTimer = 10;
             cellState = ConwayCore.Instance.paintPickedState;
+            freezeState = cellState;
             PaintCell();
         }
     }

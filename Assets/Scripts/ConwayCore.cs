@@ -36,6 +36,7 @@ namespace ConwayGame
         [SerializeField] private TMP_Text autoRunText;
         [SerializeField] private Button stepButton;
         [SerializeField] private Image pickerColorImage;
+        [SerializeField] private WaveAudioController waveAudioController;
 
 
 
@@ -62,6 +63,16 @@ namespace ConwayGame
                 DOTween.SetTweensCapacity(
                     Mathf.Max(200, cellCount * 5),
                     Mathf.Max(50, cellCount * 2));
+
+                if (waveAudioController == null)
+                {
+                    waveAudioController = GetComponent<WaveAudioController>();
+                }
+
+                if (waveAudioController == null)
+                {
+                    waveAudioController = gameObject.AddComponent<WaveAudioController>();
+                }
             }
         }
 
@@ -109,11 +120,13 @@ namespace ConwayGame
                 cell.PaintCell();
             }
             coolDownTimer--;
+            waveAudioController.PlayNextWaveStep();
         }
 
         private void OnApplicationQuit()
         {
             gameCellList.Clear();
+            waveAudioController.StopWave();
             StopAllCoroutines();
         }
 
@@ -162,7 +175,13 @@ namespace ConwayGame
 
         public void OnReset()
         {
+            waveAudioController.StopWave();
             SceneManager.LoadScene(0);
+        }
+
+        public void BeginWave(State waveState)
+        {
+            waveAudioController.BeginWave(waveState);
         }
 
         public void NextStepButtonPressed()

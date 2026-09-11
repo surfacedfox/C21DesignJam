@@ -216,8 +216,10 @@ namespace ConwayGame
         //DEBUG
         public void OnCellClicked()
         {
-            SetState(ConwayCore.Instance.paintPickedState);
+            State selectedState = ConwayCore.Instance.paintPickedState;
+            SetState(selectedState);
             freezeState = cellState;
+            ConwayCore.Instance.BeginWave(selectedState);
         }
     }
 }

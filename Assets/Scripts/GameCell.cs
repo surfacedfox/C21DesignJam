@@ -67,7 +67,7 @@ namespace ConwayGame
             }
             if (ConwayCore.Instance.coolDownTimer > 0)
             {
-                if (ConwayCore.Instance.paintPickedState == State.Fill)
+                if (ConwayCore.Instance.paintPickedState == State.Blank)
                 {
                     goodScore = goodScore * 6;
                 }
@@ -95,10 +95,10 @@ namespace ConwayGame
             switch (cellState)
             {
                 case State.Fill:
-                    GetComponent<Image>().DOColor(Color.cornflowerBlue, 0.34f);
+                    GetComponent<Image>().DOColor(ConwayCore.Instance.goodColor, ConwayCore.Instance.stepTimer);
                     break;
                 case State.Blank:
-                    GetComponent<Image>().DOColor(Color.hotPink, 0.34f);
+                    GetComponent<Image>().DOColor(ConwayCore.Instance.badColor, ConwayCore.Instance.stepTimer);
                     break;
                 default:
                     GetComponent<Image>().color = Color.white;
@@ -111,7 +111,7 @@ namespace ConwayGame
         //DEBUG
         public void OnCellClicked()
         {
-            ConwayCore.Instance.coolDownTimer = 10;
+            
             cellState = ConwayCore.Instance.paintPickedState;
             freezeState = cellState;
             PaintCell();

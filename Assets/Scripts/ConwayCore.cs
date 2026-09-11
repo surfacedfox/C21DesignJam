@@ -23,8 +23,10 @@ namespace ConwayGame
         [SerializeField] private GameObject gridLG;
         [Header("Game Setup")]
         [SerializeField] private int numGridSize;
-        [SerializeField] private float stepTimer;
+        [SerializeField] public float stepTimer;
         [SerializeField] private int coolDownSteps = 10;
+        [SerializeField] public Color goodColor;
+        [SerializeField] public Color badColor;
         [Header("Game Debug")]
         [SerializeField] private bool autoRun = true;
         [SerializeField] public State paintPickedState = State.Fill;
@@ -32,6 +34,7 @@ namespace ConwayGame
         [SerializeField] private TMP_Text autoRunText;
         [SerializeField] private Button stepButton;
         [SerializeField] private Image pickerColorImage;
+
 
 
         public int coolDownTimer;
@@ -126,28 +129,24 @@ namespace ConwayGame
             if (autoRun)
             {
                 autoRun = false;
-                autoRunText.text = "AutoRun: OFF";
-                stepButton.gameObject.SetActive(true);
                 StopCoroutine(GameStep());
             }
             else
             {
                 autoRun = true;
-                autoRunText.text = "AutoRun: ON";
-                stepButton.gameObject.SetActive(false);
                 StartCoroutine(GameStep());
             }
         }
 
         public void FillPicked()
         {
+            ConwayCore.Instance.coolDownTimer = 10;
             paintPickedState = State.Fill;
-            UpdatePickedColorUI();
         }
         public void BlankPicked()
         {
+            ConwayCore.Instance.coolDownTimer = 10;
             paintPickedState = State.Blank;
-            UpdatePickedColorUI();
         }
         void UpdatePickedColorUI()
         {

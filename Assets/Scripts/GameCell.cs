@@ -1,6 +1,8 @@
+using System;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
+using Random = UnityEngine.Random;
 
 namespace ConwayGame
 {
@@ -13,6 +15,20 @@ namespace ConwayGame
         public State? unappliedWaveState;
         public State? waveState = null;
         public int waveStepsRemaining = 0;
+        public Sprite goodSprite;
+        public Sprite badSprite;
+        
+
+        //private refs, mostly for animating the flip/wave
+        private Tween flipTween;
+        private Image cellSprite;
+
+
+        public void Start()
+        {
+            cellSprite = GetComponent<Image>();
+        }
+
 
         public void AdvanceWave()
         {
@@ -148,18 +164,34 @@ namespace ConwayGame
 
         public void PaintCell()
         {
+            flipTween.Kill();
+            Sprite targetSprite;
+            Color targetColor;
             switch (cellState)
             {
                 case State.Fill:
-                    GetComponent<Image>().DOColor(ConwayCore.Instance.goodColor, ConwayCore.Instance.stepTimer);
+                    targetColor = ConwayCore.Instance.goodColor;
+                    targetSprite = goodSprite;
                     break;
                 case State.Blank:
-                    GetComponent<Image>().DOColor(ConwayCore.Instance.badColor, ConwayCore.Instance.stepTimer);
+                    targetColor = ConwayCore.Instance.badColor;
+                    targetSprite = badSprite;
                     break;
                 default:
-                    GetComponent<Image>().color = Color.white;
+                    targetColor = ConwayCore.Instance.badColor;
+                    targetSprite = badSprite;
                     break;
             }
+            
+            Sequence sequence = DOTween.Sequence();
+            sequence.Append(cellSprite.DOColor(targetColor, ConwayCore.Instance.stepTimer).SetEase(Ease.OutQuad));
+            sequence.AppendCallback(() =>
+            {
+                cellSprite.sprite = targetSprite;
+            });
+            sequence.OnComplete(() => flipTween = null);
+
+            flipTween = sequence;
         }
 
 

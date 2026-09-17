@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -12,7 +13,7 @@ namespace ConwayGame
     public enum State
     {
         Fill,
-        Blank,
+        Blank
     }
 
     public class ConwayCore : MonoBehaviour
@@ -62,6 +63,7 @@ namespace ConwayGame
         // Start is called once before the first execution of Update after the MonoBehaviour is created
         void Start()
         {
+            DOTween.SetTweensCapacity(2000,1500);
             coolDownTimer = 0;
             gridLG.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, numGridSize * gridLG.GetComponent<GridLayoutGroup>().cellSize.x);
             gridLG.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, numGridSize * gridLG.GetComponent<GridLayoutGroup>().cellSize.y);

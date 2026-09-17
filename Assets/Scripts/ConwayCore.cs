@@ -4,6 +4,7 @@ using DG.Tweening;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Audio;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -29,6 +30,8 @@ namespace ConwayGame
         [SerializeField] private int coolDownSteps = 10;
         [SerializeField] public Color goodColor;
         [SerializeField] public Color badColor;
+        public AudioClip[] goodSounds;
+        public AudioClip[] badsounds;
         [Header("Game Debug")]
         [SerializeField] private bool autoRun = true;
         [SerializeField] public State paintPickedState = State.Fill;

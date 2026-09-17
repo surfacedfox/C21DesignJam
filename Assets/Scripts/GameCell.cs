@@ -74,14 +74,13 @@ namespace ConwayGame
             if (waveState != null)
             {
                 cellState = waveState.Value;
-
+                
                 waveStepsRemaining--;
                 if (waveStepsRemaining == 1)
                 {
                     waveState = null;
                     cellState = State.Fill;
                 }
-
                 return;
             }
 
@@ -192,6 +191,24 @@ namespace ConwayGame
             sequence.OnComplete(() => flipTween = null);
 
             flipTween = sequence;
+            if (ConwayCore.Instance.coolDownTimer > 0)
+            {
+                AudioSource source = ConwayCore.Instance.GetComponent<AudioSource>();
+                AudioClip clip;
+                switch (cellState)
+                {
+                    case State.Fill:
+                        clip = ConwayCore.Instance.goodSounds[Random.Range(0,ConwayCore.Instance.goodSounds.Length-1)];
+                        break;
+                    case State.Blank:
+                        clip = ConwayCore.Instance.badsounds[Random.Range(0,ConwayCore.Instance.badsounds.Length-1)];
+                        break;
+                    default:
+                        clip = ConwayCore.Instance.goodSounds[Random.Range(0,ConwayCore.Instance.goodSounds.Length-1)];
+                        break;
+                }
+                source.PlayOneShot(clip);
+            }
         }
 
 
@@ -201,6 +218,7 @@ namespace ConwayGame
         {
             waveState = ConwayCore.Instance.paintPickedState;
             waveStepsRemaining = Random.Range(3, 5);
+            ConwayCore.Instance.coolDownTimer = waveStepsRemaining; 
             freezeState = cellState;
             cellState = ConwayCore.Instance.paintPickedState;
             PaintCell();

@@ -583,6 +583,25 @@ MonoBehaviour:
   coolDownSteps: 10
   goodColor: {r: 1, g: 0.73170877, b: 0, a: 1}
   badColor: {r: 0.85098046, g: 0.4156863, b: 0.5058824, a: 1}
+  goodSounds:
+  - {fileID: 8300000, guid: a8c5afe02dfa342bf9bf7ffcb790a220, type: 3}
+  - {fileID: 8300000, guid: 0c43c04dbe1c9427ea11e56c20d47dab, type: 3}
+  - {fileID: 8300000, guid: e97fdf9c6fa254358b59a13da290edff, type: 3}
+  - {fileID: 8300000, guid: 51f55f1ca6700400e837c7722005596a, type: 3}
+  - {fileID: 8300000, guid: 4b880b22b0583472ca500058c25cb101, type: 3}
+  - {fileID: 8300000, guid: 27be768aed09943328f49e599cb7c5fa, type: 3}
+  - {fileID: 8300000, guid: 976216d54cb5547f298c2e66a5fcd055, type: 3}
+  badsounds:
+  - {fileID: 8300000, guid: 923b3df8780764419a82bdcd036ce6ae, type: 3}
+  - {fileID: 8300000, guid: ad6bed4d39b9e45a3b3fe915c57b298f, type: 3}
+  - {fileID: 8300000, guid: 145c9ea734d8b44098b9972b278419a6, type: 3}
+  - {fileID: 8300000, guid: 41d8e69f88ae6420daec070ff17ef233, type: 3}
+  - {fileID: 8300000, guid: a29214d4d331d4624992aef293c86d0d, type: 3}
+  - {fileID: 8300000, guid: 43b22529896ee498baff4ce46cf0f892, type: 3}
+  - {fileID: 8300000, guid: 275e8e06acd054df6a624c7baef5d028, type: 3}
+  - {fileID: 8300000, guid: 5a94118da26b440a8ad22730b7097aa8, type: 3}
+  - {fileID: 8300000, guid: f0f3a98e063bc41a3b315227a589b9b2, type: 3}
+  - {fileID: 8300000, guid: 3445797cdd84342f0abab3a670d17ca8, type: 3}
   autoRun: 1
   paintPickedState: 1
   autoRunText: {fileID: 0}
@@ -687,7 +706,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 1
-  m_Volume: 1
+  m_Volume: 0.17
   m_Pitch: 1
   Loop: 0
   Mute: 0
